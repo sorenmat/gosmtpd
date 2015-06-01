@@ -246,25 +246,18 @@ func createListener() net.Listener {
 	addr := "0.0.0.0:" + *PORT
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal("Cannot listen on port, %v", err)
+		log.Fatalf("Cannot listen on port\n, %v", err)
 	} else {
 		log.Println("Listening on tcp ", addr)
 	}
 	return listener
 }
 
-func main() {
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-
-	case forward.FullCommand():
-		FORWARD_ENABLED = true
-	}
+func serve() {
 
 	setupWebRoutes()
 
-
 	database = make([]MailConnection, 0)
-
 
 	listener := createListener()
 	go func() {
@@ -285,4 +278,12 @@ func main() {
 		}
 	}()
 	goji.Serve()
+}
+func main() {
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+
+	case forward.FullCommand():
+		FORWARD_ENABLED = true
+	}
+	serve()
 }

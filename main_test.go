@@ -8,8 +8,13 @@ import (
 	"net"
 )
 
+func getPort() *string {
+	test := "2525"
+	return &test
+}
 func TestSendingMail(t *testing.T) {
-	go main()
+	PORT = getPort()
+	go serve()
 	SendMail("soren@test.com")
 	resp, _ := http.Get("http://localhost:8000/inbox/soren@test.com")
 	if resp.StatusCode != 200 {
@@ -80,7 +85,7 @@ func TestForwardHostnameWithoutPort(t *testing.T) {
 
 func TestEmail(t *testing.T) {
 	emails := []string{"test@something.com", "  test@something.com", " test@something.com        "}
-	for _,email := range emails {
+	for _, email := range emails {
 		name, host, err := getEmail(email)
 		if name != "test" || host != "something.com" {
 			t.Error()
