@@ -13,7 +13,7 @@ func getPort() *string {
 	return &test
 }
 func TestSendingMail(t *testing.T) {
-	PORT = getPort()
+	PORT = getPort() // we need to force this, since we don't parse the commandline
 	go serve()
 	SendMail("soren@test.com")
 	resp, _ := http.Get("http://localhost:8000/inbox/soren@test.com")
