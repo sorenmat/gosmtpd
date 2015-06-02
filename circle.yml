@@ -5,9 +5,9 @@ machine:
     GOPATH: "$HOME/gopath"
 checkout:
   post:
-    - rm -rf $HOME/.go_workspace/src/github.com/sorenmat/*
-    - mkdir -p $HOME/.go_workspace/src/github.com/sorenmat
-    - ln -snf $HOME/$CIRCLE_PROJECT_REPONAME $HOME/.go_workspace/src/github.com/sorenmat
+    - rm -rf $HOME/gopath/src/github.com/sorenmat/*
+    - mkdir -p $HOME/gopath/src/github.com/sorenmat
+    - ln -snf $HOME/$CIRCLE_PROJECT_REPONAME $HOME/gopath/src/github.com/sorenmat
 
 dependencies:
   pre:
