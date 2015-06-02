@@ -5,10 +5,11 @@ machine:
     GOPATH: "$HOME/gopath"
 
 dependencies:
+    pre:
+    - go get -t -d -v ./...
   override:
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
-    - go get -v
 test:
   post:
     - goveralls -service circleci.io -repotoken $repo_token ./
