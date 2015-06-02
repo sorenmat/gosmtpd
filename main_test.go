@@ -1,11 +1,13 @@
 package main
+
 import (
-	"testing"
-	"net/smtp"
-	"log"
-	"net/http"
 	"encoding/json"
+	"log"
 	"net"
+	"net/http"
+	"net/smtp"
+	"testing"
+	"time"
 )
 
 func getPort() *string {
@@ -15,6 +17,7 @@ func getPort() *string {
 func TestSendingMail(t *testing.T) {
 	PORT = getPort() // we need to force this, since we don't parse the commandline
 	go serve()
+	time.Sleep(2 * time.Second)
 	SendMail("soren@test.com")
 	resp, _ := http.Get("http://localhost:8000/inbox/soren@test.com")
 	if resp.StatusCode != 200 {
@@ -35,7 +38,7 @@ func TestSendingMail(t *testing.T) {
 }
 
 func getEmailByHash(hash string, t *testing.T) {
-	resp, _ := http.Get("http://localhost:8000/email/"+hash)
+	resp, _ := http.Get("http://localhost:8000/email/" + hash)
 	if resp.StatusCode != 200 {
 		t.Error(resp.Status)
 	}
@@ -51,12 +54,11 @@ func getEmailByHash(hash string, t *testing.T) {
 	}
 }
 
-
 func SendMail(receiver string) {
 	err := smtp.SendMail("localhost:2525",
 		nil,
 		"sorenm@mymessages.dk", // sender
-		[]string{receiver}, //recipient
+		[]string{receiver},     //recipient
 		[]byte("Subject: Testing\nThis is $the email body.\nAnd it is the bomb"),
 	)
 	if err != nil {
@@ -81,7 +83,6 @@ func TestForwardHostnameWithoutPort(t *testing.T) {
 		t.Error()
 	}
 }
-
 
 func TestEmail(t *testing.T) {
 	emails := []string{"test@something.com", "  test@something.com", " test@something.com        "}
