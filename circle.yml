@@ -2,7 +2,7 @@ machine:
   services:
     - docker
   environment:
-    GOPATH: "/home/ubuntu/.go_workspace"
+    GOPATH: "$HOME/gopath"
 
 dependencies:
   override:
@@ -10,15 +10,14 @@ dependencies:
     - go get github.com/mattn/goveralls
 
 test:
-  override:
+  post:
     - goveralls -service circleci.io -repotoken $repo_token ./
-    - docker run -d -p 8000:8000 sorenmat/gosmtpd; sleep 10
-    - curl --retry 10 --retry-delay 5 -v http://localhost:8000
-
 deployment:
   hub:
     branch: master
     commands:
       - docker build -t sorenmat/gosmtpd .
+      - docker run -d -p 8000:8000 sorenmat/gosmtpd; sleep 10
+      - curl --retry 10 --retry-delay 5 -v http://localhost:8000
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push sorenmat/gosmtpd
