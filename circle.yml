@@ -5,8 +5,8 @@ machine:
     GOPATH: "$HOME/gopath"
 
 dependencies:
-    pre:
-      - go get -t -d -v ./...
+  pre:
+    - go get -t -d -v ./...
   override:
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
