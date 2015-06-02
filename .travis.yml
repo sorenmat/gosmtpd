@@ -9,4 +9,4 @@ before_install:
 
 script:
   - go test -v ./...
-  - $HOME/gopath/bin/goveralls -repotoken $COVERALLS_TOKEN
+  - goveralls -repotoken $COVERALLS_TOKEN
