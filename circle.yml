@@ -1,8 +1,6 @@
 machine:
   services:
     - docker
-  environment:
-    GOPATH: "$HOME/gopath"
 checkout:
   post:
     - rm -rf $HOME/gopath/src/github.com/sorenmat/*
