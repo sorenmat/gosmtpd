@@ -12,6 +12,11 @@ test:
     - goveralls -service circleci.io -repotoken $repo_token
     - docker run -d -p 8000:8000 sorenmat/gosmtpd; sleep 10
     - curl --retry 10 --retry-delay 5 -v http://localhost:8000
+    post:
+      - go tool cover -html=coverage.out -o $CIRCLE_ARTIFACTS/coverage/index.html:
+        pwd: ../.go_workspace/src/${REPO_PATH}
+      - goveralls -coverprofile=coverage.out -service=circleci -repotoken $COVERALLS_TOKEN:
+        pwd: ../.go_workspace/src/${REPO_PATH}
 
 deployment:
   hub:
