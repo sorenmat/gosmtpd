@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -35,6 +36,41 @@ var forward = app.Command("forwarding", "enable mail forwarding for specific hos
 var forwardhost = forward.Arg("forwardhost", "The hostname on which email should be forwarded").Required().String()
 var forwardport = forward.Arg("forwardport", "The hostname on which email should be forwarded").Required().String()
 
+func (mc *MailConnection) resetDeadLine() {
+	mc.connection.SetDeadline(time.Now().Add(timeout * time.Second))
+}
+
+func (mc *MailConnection) nextLine() (string, error) {
+	return mc.reader.ReadString('\n')
+}
+
+func (mc *MailConnection) inDataMode() bool {
+	return mc.state == READ_DATA
+}
+
+// Flush the response buffer to the n
+func (mc *MailConnection) flush() bool {
+	mc.resetDeadLine()
+	size, err := mc.writer.WriteString(mc.response)
+	mc.writer.Flush()
+	mc.response = mc.response[size:]
+
+	if err != nil {
+		if err == io.EOF {
+			// connection closed
+			return false
+		}
+		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+			// a timeout
+			return false
+		}
+	}
+	if mc.dropConnection {
+		return false
+	}
+	return true
+}
+
 func handleClient(mc *MailConnection) {
 	defer mc.connection.Close()
 
@@ -61,7 +97,7 @@ func handleClient(mc *MailConnection) {
 			mc.state = NORMAL
 		}
 
-		cont := writeResponse(mc)
+		cont := mc.flush()
 		if !cont {
 			return
 		}
@@ -130,116 +166,96 @@ func killClient(mc *MailConnection) {
 	mc.dropConnection = true
 }
 
-func readFrom(mc *MailConnection) (input string, err error) {
-	var reply string
-	// Command state terminator by default
-	suffix := "\r\n"
-	if mc.state == READ_DATA {
+func getTerminateString(state State) string {
+	terminateString := "\r\n"
+	if state == READ_DATA {
 		// DATA state
-		suffix = "\r\n.\r\n"
+		terminateString = "\r\n.\r\n"
 	}
+	return terminateString
+
+}
+
+func readFrom(mc *MailConnection) (input string, err error) {
+	var read string
+
+	terminateString := getTerminateString(mc.state)
+
 	for err == nil {
-		mc.connection.SetDeadline(time.Now().Add(timeout * time.Second))
-		reply, err = mc.reader.ReadString('\n')
-		if reply != "" {
-			input = input + reply
-			if len(input) > mail_max_size {
-				err = errors.New("Maximum DATA size exceeded (" + strconv.Itoa(mail_max_size) + ")")
-				return input, err
-			}
-			if mc.state == READ_DATA {
-				// Extract the subject while we are at it.
-				extractSubject(mc, reply)
-			}
-		}
+		mc.resetDeadLine()
+		read, err = mc.nextLine()
 		if err != nil {
 			break
 		}
-		if strings.HasSuffix(input, suffix) {
+
+		if read != "" {
+			input = input + read
+			if len(input) > mail_max_size {
+				err = errors.New("DATA size exceeded (" + strconv.Itoa(mail_max_size) + ")")
+				return input, err
+			}
+
+			if mc.inDataMode() {
+				scanForSubject(mc, read)
+			}
+		}
+		if strings.HasSuffix(input, terminateString) {
 			break
 		}
 	}
 	return input, err
 }
 
-// Look at the data block, does it contain a subject
-func extractSubject(mc *MailConnection, reply string) {
-	if mc.Subject == "" && (len(reply) > 8) {
-		test := strings.ToUpper(reply[0:9])
-		if strings.Index(test, SUBJECT) == 0 {
-			// first line with \r\n
-			mc.Subject = reply[9:]
-		}
+func scanForSubject(mc *MailConnection, line string) {
+	if mc.Subject == "" && strings.Index(strings.ToUpper(line), SUBJECT) == 0 {
+		mc.Subject = line[9:]
 	} else if strings.HasSuffix(mc.Subject, "\r\n") {
-		// chop off the \r\n
+		// remove the newline stuff
 		mc.Subject = mc.Subject[0 : len(mc.Subject)-2]
-		if (strings.HasPrefix(reply, " ")) || (strings.HasPrefix(reply, "\t")) {
-			// subject is multi-line
-			mc.Subject = mc.Subject + reply[1:]
+		if (strings.HasPrefix(line, " ")) || (strings.HasPrefix(line, "\t")) {
+			// multiline subject
+			mc.Subject = mc.Subject + line[1:]
 		}
 	}
-}
-
-func writeResponse(mc *MailConnection) bool {
-	mc.connection.SetDeadline(time.Now().Add(timeout * time.Second))
-	size, err := mc.writer.WriteString(mc.response)
-	mc.writer.Flush()
-	mc.response = mc.response[size:]
-
-	if err != nil {
-		if err == io.EOF {
-			// connection closed
-			return false
-		}
-		if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-			// a timeout
-			return false
-		}
-	}
-	if mc.dropConnection {
-		return false
-	}
-	return true
 }
 
 func saveMail(mc *MailConnection) bool {
-	for {
-		if addr_err := isEmailAddressesValid(mc); addr_err != nil {
-			log.Printf("Email from '%s' doesn't have a valid email address the error was %s\n", mc.From, addr_err.Error())
-			return false
-		}
-		database = append(database, *mc)
-		if FORWARD_ENABLED {
-			if strings.Contains(mc.To, *forwardhost) {
-				forwardEmail(mc)
-			}
-		}
-		return true
+	log.Println("Saving email")
+	if err := isEmailAddressesValid(mc); err != nil {
+		log.Printf("Email from '%s' doesn't have a valid email address the error was %s\n", mc.From, err.Error())
+		return false
 	}
+	database = append(database, *mc)
+	if FORWARD_ENABLED {
+		if strings.Contains(mc.To, *forwardhost) {
+			forwardEmail(mc)
+		}
+	}
+	fmt.Println("Email saved !")
+	return true
 }
 
 func isEmailAddressesValid(mc *MailConnection) error {
-	user, host, addr_err := getEmail(mc.From)
-	if addr_err != nil {
-		return addr_err
+	fmt.Println("Calling is email valid")
+	if from, err := cleanupEmail(mc.From); err == nil {
+		mc.From = from
+	} else {
+		return err
 	}
-	mc.From = user + "@" + host
-	user, host, addr_err = getEmail(mc.To)
-	if addr_err != nil {
-		return addr_err
+	if to, err := cleanupEmail(mc.To); err == nil {
+		mc.To = to
+	} else {
+		return err
 	}
-	mc.To = user + "@" + host
-
-	return addr_err
+	return nil
 }
 
-func getEmail(str string) (name string, host string, err error) {
+func cleanupEmail(str string) (email string, err error) {
 	address, err := mail.ParseAddress(str)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	res := strings.Split(address.Address, "@")
-	return res[0], res[1], nil
+	return address.Address, nil
 }
 
 func createListener() net.Listener {
@@ -268,12 +284,12 @@ func serve() {
 				continue
 			}
 			go handleClient(&MailConnection{
-				connection:    conn,
-				address: conn.RemoteAddr().String(),
-				reader:   bufio.NewReader(conn),
-				writer:  bufio.NewWriter(conn),
-				MailId:  uuid.New(),
-				Mail:    Mail{Received: time.Now().Unix()},
+				connection: conn,
+				address:    conn.RemoteAddr().String(),
+				reader:     bufio.NewReader(conn),
+				writer:     bufio.NewWriter(conn),
+				MailId:     uuid.New(),
+				Mail:       Mail{Received: time.Now().Unix()},
 			})
 		}
 	}()
