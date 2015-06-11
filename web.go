@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/zenazn/goji"
@@ -48,7 +49,6 @@ func mailById(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func deleteMails(c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
-	encoder := json.NewEncoder(w)
 
 	result := make([]MailConnection, 0)
 	for _, msg := range database {
@@ -56,17 +56,18 @@ func deleteMails(c web.C, w http.ResponseWriter, r *http.Request) {
 			result = append(result, msg)
 		}
 	}
-	encoder.Encode(result)
+	database = result
 }
 
 func deleteById(c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
-	encoder := json.NewEncoder(w)
+
 	result := make([]MailConnection, 0)
+	fmt.Println("Trying to delete ", id)
 	for _, msg := range database {
 		if msg.MailId != id {
 			result = append(result, msg)
 		}
 	}
-	encoder.Encode(result)
+	database = result
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -70,8 +71,24 @@ func TestSendingMail(t *testing.T) {
 	if len(d) != 1 {
 		t.Error("To many email")
 	}
-
 	getEmailByHash(d[0].MailId, t)
+	deleteEmailById(d[0].MailId)
+
+	resp, _ = http.Get("http://localhost:8000/inbox/sorenm@test.com")
+	if resp.StatusCode != 200 {
+		t.Error(resp.Status)
+	}
+	decoder = json.NewDecoder(resp.Body)
+
+	err = decoder.Decode(&d)
+	if err != nil {
+		t.Error("Unable to decode message list")
+	}
+
+	if len(d) != 0 {
+		t.Errorf("Not the correct number '%d' of emails\n ", len(d))
+	}
+
 }
 
 func getEmailByHash(hash string, t *testing.T) []MailConnection {
@@ -92,6 +109,26 @@ func getEmailByHash(hash string, t *testing.T) []MailConnection {
 		t.Error("To many email")
 	}
 	return d
+}
+func deleteRequest(url string) (*http.Response, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest(
+		"DELETE",
+		url,
+		bytes.NewBuffer([]byte("")),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	reply, err := client.Do(req)
+	if err != nil {
+		log.Panic(err)
+	}
+	return reply, err
+}
+
+func deleteEmailById(hash string) {
+	deleteRequest("http://localhost:8000/email/" + hash)
+
+	//dump, _ := httputil.DumpResponse(resp, true)
 }
 
 func SendMail(receiver string) {
