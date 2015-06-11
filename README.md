@@ -5,13 +5,26 @@
 
 A server that accepts smtp request and saves the emails in memory for later retrieval.
 
-GET /mail List all mails
+## GET /mail 
+List all mails
 
-GEt /inbox/:email List all email for a given email address
+## GET /inbox/:email 
+List all email for a given email address
 
-GET /email/:id Get an email by id
+## GET /email/:id 
+Get an email by id
 
-DELETE /inbox/:email Delete all mails for a given email
+## DELETE /inbox/:email 
+Delete all mails for a given email
 
-DELETE /email/:id Delete a email via the id
+## DELETE /email/:id 
+Delete a email via the id
 
+# Trying it out
+
+You can install it by doing 
+
+``docker pull sorenmat/gosmtpd``
+
+
+``docker start sorenmat/gosmtpd``
