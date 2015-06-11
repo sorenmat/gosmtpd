@@ -5,9 +5,13 @@
 
 A server that accepts smtp request and saves the emails in memory for later retrieval.
 
-/mail List all mails
+GET /mail List all mails
 
-/inbox/:email List all email for a given email address
+GEt /inbox/:email List all email for a given email address
 
-/email/:id Get an email by id
+GET /email/:id Get an email by id
+
+DELETE /inbox/:email Delete all mails for a given email
+
+DELETE /email/:id Delete a email via the id
 
