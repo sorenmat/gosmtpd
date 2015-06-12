@@ -9,14 +9,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/smtp"
+	"os"
 	"testing"
 	"time"
 )
 
 func init() {
-	PORT = getPort() // we need to force this, since we don't parse the commandline
+	os.Setenv("PORT", "8282")
 
-	go serve()
+	go serve(MailConfig{port: "2525", forwardEnabled: false})
 	time.Sleep(2 * time.Second)
 
 }

@@ -1,9 +1,9 @@
 package main
-import (
-	"net"
-	"bufio"
-)
 
+import (
+	"bufio"
+	"net"
+)
 
 type Mail struct {
 	To, From, Subject, Data string
@@ -12,17 +12,17 @@ type Mail struct {
 
 type MailConnection struct {
 	Mail
-	state          State
-	helo           string
-	response       string
-	address        string
-	MailId         string
+	state    State
+	helo     string
+	response string
+	address  string
+	MailId   string
 
 	connection     net.Conn
 	reader         *bufio.Reader
 	writer         *bufio.Writer
 	dropConnection bool
-
+	mailconfig     *MailConfig
 }
 
 type State int
@@ -34,13 +34,12 @@ const (
 )
 
 const (
-	EHLO = "EHLO"
-	NO_OP = "NOOP"
-	HELLO = "HELO"
-	SUBJECT = "SUBJECT: "
-	DATA = "DATA"
+	EHLO      = "EHLO"
+	NO_OP     = "NOOP"
+	HELLO     = "HELO"
+	SUBJECT   = "SUBJECT: "
+	DATA      = "DATA"
 	MAIL_FROM = "MAIL FROM:"
-	RCPT_TO = "RCPT TO:"
-	RESET = "RSET"
-
+	RCPT_TO   = "RCPT TO:"
+	RESET     = "RSET"
 )

@@ -22,9 +22,6 @@ const OK = "250 OK"
 const timeout time.Duration = time.Duration(10)
 const mail_max_size = 1024 * 1024 * 2 // 2 MB
 
-// In-Memory database
-var database []MailConnection
-
 var FORWARD_ENABLED = false
 
 var app = kingpin.New("gosmtpd", "A smtp server for swallowing emails, with possiblity to forward some")
@@ -74,7 +71,7 @@ func (mc *MailConnection) flush() bool {
 func processClientRequest(mc *MailConnection) {
 	defer mc.connection.Close()
 
-	greeting := "220 " + *HOSTNAME + " SMTP goSMTPd #" + mc.MailId + " " + time.Now().Format(time.RFC1123Z)
+	greeting := "220 " + mc.mailconfig.hostname + " SMTP goSMTPd #" + mc.MailId + " " + time.Now().Format(time.RFC1123Z)
 	for i := 0; i < 100; i++ {
 		switch mc.state {
 		case INITIAL:
@@ -225,7 +222,9 @@ func saveMail(mc *MailConnection) bool {
 		log.Printf("Email from '%s' doesn't have a valid email address the error was %s\n", mc.From, err.Error())
 		return false
 	}
-	database = append(database, *mc)
+
+	mc.mailconfig.database = append(mc.mailconfig.database, *mc)
+	fmt.Println(mc.mailconfig)
 	if FORWARD_ENABLED {
 		if strings.Contains(mc.To, *forwardhost) {
 			forwardEmail(mc)
@@ -258,24 +257,35 @@ func cleanupEmail(str string) (email string, err error) {
 	return address.Address, nil
 }
 
-func createListener() net.Listener {
-	addr := "0.0.0.0:" + *PORT
+func createListener(config MailConfig) net.Listener {
+	addr := "0.0.0.0:" + config.port
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalf("Cannot listen on port\n, %v", err)
+		//log.Fatalf("Cannot listen on '%s' port '%s'\nerror: %v", addr, config.port, err)
+		panic(err)
 	} else {
 		log.Println("Listening on tcp ", addr)
 	}
 	return listener
 }
 
-func serve() {
+type MailConfig struct {
+	hostname       string
+	port           string
+	forwardEnabled bool
+	forwardHost    string
+	forwardPort    string
+	// In-Memory database
+	database []MailConnection
+}
 
-	setupWebRoutes()
+func serve(config MailConfig) {
+	fmt.Println("Calling serve with: ", config)
+	config.database = make([]MailConnection, 0)
 
-	database = make([]MailConnection, 0)
+	setupWebRoutes(&config)
 
-	listener := createListener()
+	listener := createListener(config)
 	go func() {
 		for {
 			conn, err := listener.Accept()
@@ -284,6 +294,7 @@ func serve() {
 				continue
 			}
 			go processClientRequest(&MailConnection{
+				mailconfig: &config,
 				connection: conn,
 				address:    conn.RemoteAddr().String(),
 				reader:     bufio.NewReader(conn),
@@ -295,11 +306,12 @@ func serve() {
 	}()
 	goji.Serve()
 }
+
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 
 	case forward.FullCommand():
 		FORWARD_ENABLED = true
 	}
-	serve()
+	serve(MailConfig{hostname: *HOSTNAME, port: *PORT, forwardEnabled: FORWARD_ENABLED, forwardHost: *forwardhost, forwardPort: *forwardport})
 }

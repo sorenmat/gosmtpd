@@ -9,25 +9,25 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-func setupWebRoutes() {
-	goji.Get("/mail", allMails)
-	goji.Get("/inbox/:email", mails)
-	goji.Get("/email/:id", mailById)
-	goji.Delete("/inbox/:email", deleteMails)
-	goji.Delete("/email/:id", deleteById)
+func setupWebRoutes(config *MailConfig) {
+	goji.Get("/mail", func(c web.C, w http.ResponseWriter, r *http.Request) { allMails(config, c, w, r) })
+	goji.Get("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { mails(config, c, w, r) })
+	goji.Get("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { mailById(config, c, w, r) })
+	goji.Delete("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteMails(config, c, w, r) })
+	goji.Delete("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteById(config, c, w, r) })
 
 }
-func allMails(c web.C, w http.ResponseWriter, r *http.Request) {
+func allMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
-	encoder.Encode(database)
+	encoder.Encode(config.database)
 }
 
-func mails(c web.C, w http.ResponseWriter, r *http.Request) {
+func mails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
 	encoder := json.NewEncoder(w)
 
 	result := make([]MailConnection, 0)
-	for _, msg := range database {
+	for _, msg := range config.database {
 		if msg.To == email {
 			result = append(result, msg)
 		}
@@ -35,11 +35,11 @@ func mails(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Encode(result)
 }
 
-func mailById(c web.C, w http.ResponseWriter, r *http.Request) {
+func mailById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 	encoder := json.NewEncoder(w)
 	result := make([]MailConnection, 0)
-	for _, msg := range database {
+	for _, msg := range config.database {
 		if msg.MailId == id {
 			result = append(result, msg)
 		}
@@ -47,27 +47,27 @@ func mailById(c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder.Encode(result)
 }
 
-func deleteMails(c web.C, w http.ResponseWriter, r *http.Request) {
+func deleteMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
 
 	result := make([]MailConnection, 0)
-	for _, msg := range database {
+	for _, msg := range config.database {
 		if msg.To != email {
 			result = append(result, msg)
 		}
 	}
-	database = result
+	config.database = result
 }
 
-func deleteById(c web.C, w http.ResponseWriter, r *http.Request) {
+func deleteById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 
 	result := make([]MailConnection, 0)
 	fmt.Println("Trying to delete ", id)
-	for _, msg := range database {
+	for _, msg := range config.database {
 		if msg.MailId != id {
 			result = append(result, msg)
 		}
 	}
-	database = result
+	config.database = result
 }
