@@ -71,7 +71,7 @@ func (mc *MailConnection) flush() bool {
 	return true
 }
 
-func handleClient(mc *MailConnection) {
+func processClientRequest(mc *MailConnection) {
 	defer mc.connection.Close()
 
 	greeting := "220 " + *HOSTNAME + " SMTP goSMTPd #" + mc.MailId + " " + time.Now().Format(time.RFC1123Z)
@@ -92,7 +92,7 @@ func handleClient(mc *MailConnection) {
 					answer(mc, "554 Error: transaction failed, blame it on the weather")
 				}
 			} else {
-				log.Println("DATA read error: %v", err)
+				log.Printf("DATA read error: %v\n", err)
 			}
 			mc.state = NORMAL
 		}
@@ -280,10 +280,10 @@ func serve() {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				log.Panic("Unable to accept: %s", err)
+				log.Panicf("Unable to accept: %s\n", err)
 				continue
 			}
-			go handleClient(&MailConnection{
+			go processClientRequest(&MailConnection{
 				connection: conn,
 				address:    conn.RemoteAddr().String(),
 				reader:     bufio.NewReader(conn),

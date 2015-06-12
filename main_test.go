@@ -72,9 +72,29 @@ func TestSendingMail(t *testing.T) {
 		t.Error("To many email")
 	}
 	getEmailByHash(d[0].MailId, t)
+}
+
+func TestSendingMailAndDeletingIt(t *testing.T) {
+
+	SendMail("sorenm1@test.com")
+	resp, _ := http.Get("http://localhost:8000/inbox/sorenm1@test.com")
+	if resp.StatusCode != 200 {
+		t.Error(resp.Status)
+	}
+	decoder := json.NewDecoder(resp.Body)
+	var d []MailConnection
+	err := decoder.Decode(&d)
+	if err != nil {
+		t.Error("Unable to decode message list")
+	}
+
+	if len(d) != 1 {
+		t.Error("Expected one email got ", len(d))
+	}
+
 	deleteEmailById(d[0].MailId)
 
-	resp, _ = http.Get("http://localhost:8000/inbox/sorenm@test.com")
+	resp, _ = http.Get("http://localhost:8000/inbox/sorenm1@test.com")
 	if resp.StatusCode != 200 {
 		t.Error(resp.Status)
 	}
@@ -125,10 +145,14 @@ func deleteRequest(url string) (*http.Response, error) {
 	return reply, err
 }
 
+// Delete a specific mail by finding via the id
 func deleteEmailById(hash string) {
 	deleteRequest("http://localhost:8000/email/" + hash)
+}
 
-	//dump, _ := httputil.DumpResponse(resp, true)
+// Delete all mails in an inbox
+func emptyMailBox(email string) {
+	deleteRequest("http://localhost:8000/inbox/" + email)
 }
 
 func SendMail(receiver string) {
@@ -159,7 +183,7 @@ func TestForwardHostname(t *testing.T) {
 	port := "2525"
 	result := net.JoinHostPort(host, port)
 	if result != "something.com:2525" {
-		t.Error()
+		t.Error("Expected something.com:2525 got ", result)
 	}
 }
 
@@ -168,7 +192,7 @@ func TestForwardHostnameWithoutPort(t *testing.T) {
 	port := ""
 	result := net.JoinHostPort(host, port)
 	if result != "something.com:" {
-		t.Error()
+		t.Error("Expected 'something.com:' got ", result)
 	}
 }
 
@@ -177,10 +201,10 @@ func TestEmail(t *testing.T) {
 	for _, email := range emails {
 		name, err := cleanupEmail(email)
 		if name != "test@something.com" {
-			t.Error()
+			t.Error("Expected 'test@something.com' got ", name)
 		}
 		if err != nil {
-			t.Error()
+			t.Error("Cleanup email resulted in an error ", err)
 		}
 	}
 }
@@ -190,7 +214,7 @@ func TestExtractSubjectOnSingleLine(t *testing.T) {
 	line := `SUBJECT: Testing`
 	scanForSubject(mc, line)
 	if mc.Subject != "Testing" {
-		t.Error()
+		t.Error("Expected 'Testing' got ", mc.Subject)
 	}
 }
 func TestExtractSubjectOnSingleNotFormattedLine(t *testing.T) {
@@ -198,7 +222,7 @@ func TestExtractSubjectOnSingleNotFormattedLine(t *testing.T) {
 	line := `SUBJECT:             Testing                  `
 	scanForSubject(mc, line)
 	if mc.Subject != "            Testing                  " {
-		t.Error()
+		t.Error("Exptected '            Testing                  ' got ", mc.Subject)
 	}
 }
 
