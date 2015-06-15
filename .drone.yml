@@ -1,0 +1,10 @@
+image: golang:1.4.2
+script:
+  - go get
+  - go build
+  - go test -short
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/mattn/goveralls
+  - goveralls -service drone.io -repotoken $repo_token ./...
+  - sudo docker build -t sorenmat/gosmtpd:$DRONE_BUILD_NUMBER .
+  - sudo docker push sorenmat/gosmtpd
