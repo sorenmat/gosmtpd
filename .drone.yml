@@ -8,3 +8,4 @@ script:
   - goveralls -service drone.io -repotoken $repo_token ./...
   - sudo docker build -t sorenmat/gosmtpd:$DRONE_BUILD_NUMBER .
   - sudo docker push sorenmat/gosmtpd
+  
