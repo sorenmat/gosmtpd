@@ -1,4 +1,4 @@
-FROM scratch
+FROM ubuntu:14.04 
 MAINTAINER Soren Mathiasen <sorenm@mymessages.dk>
 
 ADD gosmtpd /
