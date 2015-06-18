@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/zenazn/goji"
@@ -63,7 +63,7 @@ func deleteById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Requ
 	id := c.URLParams["id"]
 
 	result := make([]MailConnection, 0)
-	fmt.Println("Trying to delete ", id)
+	log.Println("Deleting ", id)
 	for _, msg := range config.database {
 		if msg.MailId != id {
 			result = append(result, msg)

@@ -5,11 +5,14 @@ import (
 	"net"
 )
 
+// Basic structure of the mail, this is used for serializing the mail to the storage
 type Mail struct {
 	To, From, Subject, Data string
 	Received                int64
 }
 
+// When a connection is made to the server, a MailConnection object is made, to keep track
+// of the specific client connection
 type MailConnection struct {
 	Mail
 	state    State
@@ -25,6 +28,7 @@ type MailConnection struct {
 	mailconfig     *MailConfig
 }
 
+// State representating the flow of the connection
 type State int
 
 const (
@@ -34,6 +38,7 @@ const (
 )
 
 const (
+	OK        = "250 OK"
 	EHLO      = "EHLO"
 	NO_OP     = "NOOP"
 	HELLO     = "HELO"

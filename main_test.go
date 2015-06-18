@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/smtp"
 	"os"
 	"testing"
@@ -38,8 +37,7 @@ test`)
 	if resp.StatusCode != 200 {
 		t.Error(resp.Status)
 	}
-	data, _ := httputil.DumpResponse(resp, true)
-	fmt.Println(string(data))
+
 	decoder := json.NewDecoder(resp.Body)
 	var d []MailConnection
 	err := decoder.Decode(&d)
@@ -117,8 +115,7 @@ func getEmailByHash(hash string, t *testing.T) []MailConnection {
 	if resp.StatusCode != 200 {
 		t.Error(resp.Status)
 	}
-	dump, _ := httputil.DumpResponse(resp, true)
-	fmt.Println(string(dump))
+
 	decoder := json.NewDecoder(resp.Body)
 	var d []MailConnection
 	err := decoder.Decode(&d)

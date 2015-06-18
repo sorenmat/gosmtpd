@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -18,11 +17,10 @@ import (
 	"gopkg.in/alecthomas/kingpin.v1"
 )
 
-const OK = "250 OK"
 const timeout time.Duration = time.Duration(10)
-const mail_max_size = 1024 * 1024 * 2 // 2 MB
+const mailMaxSize = 1024 * 1024 * 2 // 2 MB
 
-var FORWARD_ENABLED = false
+var ForwardEnabled = false
 
 var app = kingpin.New("gosmtpd", "A smtp server for swallowing emails, with possiblity to forward some")
 
@@ -119,7 +117,7 @@ func handleNormalMode(mc *MailConnection) {
 			mc.helo = line[5:]
 		}
 		answer(mc, "250-"+*HOSTNAME+" Hello "+mc.helo+"["+mc.address+"]"+"\r\n")
-		answer(mc, "250-SIZE "+strconv.Itoa(mail_max_size)+"\r\n")
+		answer(mc, "250-SIZE "+strconv.Itoa(mailMaxSize)+"\r\n")
 		answer(mc, "250 HELP")
 
 	case isCommand(line, MAIL_FROM):
@@ -187,8 +185,8 @@ func readFrom(mc *MailConnection) (input string, err error) {
 
 		if read != "" {
 			input = input + read
-			if len(input) > mail_max_size {
-				err = errors.New("DATA size exceeded (" + strconv.Itoa(mail_max_size) + ")")
+			if len(input) > mailMaxSize {
+				err = errors.New("DATA size exceeded (" + strconv.Itoa(mailMaxSize) + ")")
 				return input, err
 			}
 
@@ -224,18 +222,16 @@ func saveMail(mc *MailConnection) bool {
 	}
 
 	mc.mailconfig.database = append(mc.mailconfig.database, *mc)
-	fmt.Println(mc.mailconfig)
-	if FORWARD_ENABLED {
+	if ForwardEnabled {
 		if strings.Contains(mc.To, *forwardhost) {
 			forwardEmail(mc)
 		}
 	}
-	fmt.Println("Email saved !")
+	log.Println("Email saved !")
 	return true
 }
 
 func isEmailAddressesValid(mc *MailConnection) error {
-	fmt.Println("Calling is email valid")
 	if from, err := cleanupEmail(mc.From); err == nil {
 		mc.From = from
 	} else {
@@ -280,7 +276,6 @@ type MailConfig struct {
 }
 
 func serve(config MailConfig) {
-	fmt.Println("Calling serve with: ", config)
 	config.database = make([]MailConnection, 0)
 
 	setupWebRoutes(&config)
@@ -311,7 +306,7 @@ func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 
 	case forward.FullCommand():
-		FORWARD_ENABLED = true
+		ForwardEnabled = true
 	}
-	serve(MailConfig{hostname: *HOSTNAME, port: *PORT, forwardEnabled: FORWARD_ENABLED, forwardHost: *forwardhost, forwardPort: *forwardport})
+	serve(MailConfig{hostname: *HOSTNAME, port: *PORT, forwardEnabled: ForwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport})
 }
