@@ -84,7 +84,7 @@ func handleNormalMode(mc *MailConnection) {
 	if err != nil {
 		return
 	}
-	log.Println("Line: ", line)
+
 	switch {
 
 	case isCommand(line, HELLO):

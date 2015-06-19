@@ -84,6 +84,22 @@ func TestSendingMail(t *testing.T) {
 	getEmailByHash(d[0].MailId, t)
 }
 
+func TestSendingMailsToMultipleReceivers(t *testing.T) {
+
+	SendMails([]string{"meet@test.com", "joe@test.com", "black@test.com"})
+
+	if len(getMailConnection("meet@test.com")) != 1 {
+		t.Error("Wrong number of emails")
+	}
+	if len(getMailConnection("joe@test.com")) != 1 {
+		t.Error("Wrong number of emails")
+	}
+	if len(getMailConnection("black@test.com")) != 1 {
+		t.Error("Wrong number of emails")
+	}
+
+}
+
 func TestSendingMailAndDeletingIt(t *testing.T) {
 
 	SendMail("sorenm1@test.com")
@@ -143,6 +159,18 @@ func emptyMailBox(email string) {
 	deleteRequest("http://localhost:8000/inbox/" + email)
 }
 
+func SendMails(receiver []string) {
+	err := smtp.SendMail("localhost:2525",
+		nil,
+		"sorenm@mymessages.dk", // sender
+		receiver,               //recipient
+		[]byte("Subject: Testing\nThis is $the email body.\nAnd it is the bomb"),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func SendMail(receiver string) {
 	err := smtp.SendMail("localhost:2525",
 		nil,
@@ -154,6 +182,7 @@ func SendMail(receiver string) {
 		log.Fatal(err)
 	}
 }
+
 func SendMailWithMessage(receiver string, msg string) {
 	err := smtp.SendMail("localhost:2525",
 		nil,
