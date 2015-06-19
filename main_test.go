@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -26,6 +25,35 @@ func getPort() *string {
 	return &test
 }
 
+func getMailConnection(email string) []MailConnection {
+	resp, httperr := http.Get("http://localhost:8000/inbox/" + email)
+	if httperr != nil {
+		panic("Unable to call rest")
+	}
+	if resp.StatusCode != 200 {
+		panic(resp.Status)
+	}
+	decoder := json.NewDecoder(resp.Body)
+	var d []MailConnection
+	err := decoder.Decode(&d)
+	if err != nil {
+		panic("Unable to decode message list")
+	}
+	return d
+}
+
+func BenchmarkSendMails(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		SendMailWithMessage("sorenbench@test.com", "message")
+
+	}
+	d := getMailConnection("sorenbench@test.com")
+	if b.N != len(d) {
+		b.Errorf("Wrong number of email expected %d got %d\n", b.N, len(d))
+	}
+
+}
+
 func TestSendingMailWithMultilines(t *testing.T) {
 	//	PORT = getPort() // we need to force this, since we don't parse the commandline
 	SendMailWithMessage("sorenz@test.com", `This
@@ -33,39 +61,22 @@ is
 a
 test`)
 	time.Sleep(1 * time.Second)
-	resp, _ := http.Get("http://localhost:8000/inbox/sorenz@test.com")
-	if resp.StatusCode != 200 {
-		t.Error(resp.Status)
-	}
-
-	decoder := json.NewDecoder(resp.Body)
-	var d []MailConnection
-	err := decoder.Decode(&d)
-	if err != nil {
-		t.Error("Unable to decode message list")
-	}
+	d := getMailConnection("sorenz@test.com")
 
 	if len(d) != 1 {
 		t.Error("To many email ", len(d))
 	}
 
 	email := getEmailByHash(d[0].MailId, t)
-	fmt.Println(email[0].Data)
+	if email.To == "" {
+		t.Error("To should not be empty")
+	}
 }
 
 func TestSendingMail(t *testing.T) {
 
 	SendMail("sorenm@test.com")
-	resp, _ := http.Get("http://localhost:8000/inbox/sorenm@test.com")
-	if resp.StatusCode != 200 {
-		t.Error(resp.Status)
-	}
-	decoder := json.NewDecoder(resp.Body)
-	var d []MailConnection
-	err := decoder.Decode(&d)
-	if err != nil {
-		t.Error("Unable to decode message list")
-	}
+	d := getMailConnection("sorenm@test.com")
 
 	if len(d) != 1 {
 		t.Error("To many email")
@@ -76,33 +87,14 @@ func TestSendingMail(t *testing.T) {
 func TestSendingMailAndDeletingIt(t *testing.T) {
 
 	SendMail("sorenm1@test.com")
-	resp, _ := http.Get("http://localhost:8000/inbox/sorenm1@test.com")
-	if resp.StatusCode != 200 {
-		t.Error(resp.Status)
-	}
-	decoder := json.NewDecoder(resp.Body)
-	var d []MailConnection
-	err := decoder.Decode(&d)
-	if err != nil {
-		t.Error("Unable to decode message list")
-	}
+	d := getMailConnection("sorenm1@test.com")
 
 	if len(d) != 1 {
 		t.Error("Expected one email got ", len(d))
 	}
 
 	deleteEmailById(d[0].MailId)
-
-	resp, _ = http.Get("http://localhost:8000/inbox/sorenm1@test.com")
-	if resp.StatusCode != 200 {
-		t.Error(resp.Status)
-	}
-	decoder = json.NewDecoder(resp.Body)
-
-	err = decoder.Decode(&d)
-	if err != nil {
-		t.Error("Unable to decode message list")
-	}
+	d = getMailConnection("sorenm1@test.com")
 
 	if len(d) != 0 {
 		t.Errorf("Not the correct number '%d' of emails\n ", len(d))
@@ -110,24 +102,22 @@ func TestSendingMailAndDeletingIt(t *testing.T) {
 
 }
 
-func getEmailByHash(hash string, t *testing.T) []MailConnection {
+func getEmailByHash(hash string, t *testing.T) MailConnection {
 	resp, _ := http.Get("http://localhost:8000/email/" + hash)
 	if resp.StatusCode != 200 {
 		t.Error(resp.Status)
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-	var d []MailConnection
+	var d MailConnection
 	err := decoder.Decode(&d)
 	if err != nil {
 		t.Error("Unable to decode message list")
 	}
 
-	if len(d) != 1 {
-		t.Error("To many email")
-	}
 	return d
 }
+
 func deleteRequest(url string) (*http.Response, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(

@@ -38,13 +38,13 @@ func mails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) 
 func mailById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 	encoder := json.NewEncoder(w)
-	result := make([]MailConnection, 0)
+	//	var result []MailConnection
 	for _, msg := range config.database {
 		if msg.MailId == id {
-			result = append(result, msg)
+			encoder.Encode(msg)
 		}
 	}
-	encoder.Encode(result)
+	//	encoder.Encode(result)
 }
 
 func deleteMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {

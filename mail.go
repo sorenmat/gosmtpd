@@ -64,7 +64,7 @@ func processClientRequest(mc *MailConnection) {
 				if status := saveMail(mc); status {
 					answer(mc, "250 OK : queued as "+mc.MailId)
 				} else {
-					answer(mc, "554 Error: transaction failed, blame it on the weather")
+					answer(mc, "554 Error: transaction failed.")
 				}
 			} else {
 				log.Printf("DATA read error: %v\n", err)
@@ -84,6 +84,7 @@ func handleNormalMode(mc *MailConnection) {
 	if err != nil {
 		return
 	}
+	log.Println("Line: ", line)
 	switch {
 
 	case isCommand(line, HELLO):
@@ -108,6 +109,7 @@ func handleNormalMode(mc *MailConnection) {
 
 	case isCommand(line, RCPT_TO):
 		if len(line) > 8 {
+			mc.recepient = append(mc.recepient, line[8:])
 			mc.To = line[8:]
 		}
 		answer(mc, OK)
@@ -200,8 +202,15 @@ func saveMail(mc *MailConnection) bool {
 		log.Printf("Email from '%s' doesn't have a valid email address the error was %s\n", mc.From, err.Error())
 		return false
 	}
+	for _, rcpt := range mc.recepient {
+		to, err := cleanupEmail(rcpt)
+		if err != nil {
+			log.Println("Cleaning up email gave an error ", err)
+		}
+		mc.To = to
+		mc.mailconfig.database = append(mc.mailconfig.database, *mc)
 
-	mc.mailconfig.database = append(mc.mailconfig.database, *mc)
+	}
 	if ForwardEnabled {
 		if strings.Contains(mc.To, *forwardhost) {
 			forwardEmail(mc)
@@ -215,11 +224,13 @@ func isEmailAddressesValid(mc *MailConnection) error {
 	if from, err := cleanupEmail(mc.From); err == nil {
 		mc.From = from
 	} else {
+		log.Println("From is not valid")
 		return err
 	}
 	if to, err := cleanupEmail(mc.To); err == nil {
 		mc.To = to
 	} else {
+		log.Println("To is not valid: ", mc.To)
 		return err
 	}
 	return nil

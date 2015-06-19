@@ -17,19 +17,20 @@ type MailConfig struct {
 
 // Basic structure of the mail, this is used for serializing the mail to the storage
 type Mail struct {
-	To, From, Subject, Data string
-	Received                int64
+	To, From, Subject, Data, CC, Bcc string
+	Received                         int64
 }
 
 // When a connection is made to the server, a MailConnection object is made, to keep track
 // of the specific client connection
 type MailConnection struct {
 	Mail
-	state    State
-	helo     string
-	response string
-	address  string
-	MailId   string
+	recepient []string
+	state     State
+	helo      string
+	response  string
+	address   string
+	MailId    string
 
 	connection     net.Conn
 	reader         *bufio.Reader
@@ -53,6 +54,8 @@ const (
 	NO_OP     = "NOOP"
 	HELLO     = "HELO"
 	SUBJECT   = "SUBJECT: "
+	CC        = "CC: "
+	BCC       = "BCC: "
 	DATA      = "DATA"
 	MAIL_FROM = "MAIL FROM:"
 	RCPT_TO   = "RCPT TO:"
