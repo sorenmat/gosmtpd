@@ -100,6 +100,52 @@ func TestSendingMailsToMultipleReceivers(t *testing.T) {
 
 }
 
+func TestSendingMailsToMultipleReceiversAndDeletingThem(t *testing.T) {
+
+	SendMails([]string{"meet1@test.com", "joe1@test.com", "black1@test.com"})
+
+	if len(getMailConnection("meet1@test.com")) != 1 {
+		t.Error("Wrong number of emails")
+	}
+	emptyMailBox("meet1@test.com")
+	if len(getMailConnection("meet1@test.com")) != 0 {
+		t.Error("Should be empty")
+	}
+	
+	
+	if len(getMailConnection("joe1@test.com")) != 1 {
+		t.Error("Wrong number of emails")
+	}
+	emptyMailBox("joe1@test.com")
+	if len(getMailConnection("joe1@test.com")) != 0 {
+		t.Error("Should be empty")
+	}
+	
+	if len(getMailConnection("black1@test.com")) != 1 {
+		t.Error("Wrong number of emails")
+	}
+
+}
+
+func TestSendingMailsToMultipleReceiversAndDeletingById(t *testing.T) {
+
+	SendMails([]string{"meet2@test.com", "joe2@test.com", "black1@test.com"})
+	mail := getMailConnection("meet2@test.com")
+	if len(mail) != 1 {
+		t.Error("Wrong number of emails")
+	}
+	deleteEmailByID(mail[0].MailId)
+	mails := getMailConnection("meet2@test.com")
+	if len(mails) != 0 {
+		t.Error("Should be empty ,but was ",len(mails))
+	}
+	mails = getMailConnection("joe2@test.com")
+	if len(mails) == 0 {
+		t.Error("Was empty, but shouldn't be")
+	}
+
+}
+
 func TestSendingMailAndDeletingIt(t *testing.T) {
 
 	SendMail("sorenm1@test.com")
@@ -109,7 +155,7 @@ func TestSendingMailAndDeletingIt(t *testing.T) {
 		t.Error("Expected one email got ", len(d))
 	}
 
-	deleteEmailById(d[0].MailId)
+	deleteEmailByID(d[0].MailId)
 	d = getMailConnection("sorenm1@test.com")
 
 	if len(d) != 0 {
@@ -150,7 +196,7 @@ func deleteRequest(url string) (*http.Response, error) {
 }
 
 // Delete a specific mail by finding via the id
-func deleteEmailById(hash string) {
+func deleteEmailByID(hash string) {
 	deleteRequest("http://localhost:8000/email/" + hash)
 }
 
@@ -263,3 +309,4 @@ Multiline subject`
 		t.Error(mc.Subject, len(mc.Subject))
 	}
 }
+

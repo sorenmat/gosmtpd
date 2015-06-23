@@ -12,9 +12,9 @@ import (
 func setupWebRoutes(config *MailConfig) {
 	goji.Get("/mail", func(c web.C, w http.ResponseWriter, r *http.Request) { allMails(config, c, w, r) })
 	goji.Get("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { mails(config, c, w, r) })
-	goji.Get("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { mailById(config, c, w, r) })
+	goji.Get("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { mailByID(config, c, w, r) })
 	goji.Delete("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteMails(config, c, w, r) })
-	goji.Delete("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteById(config, c, w, r) })
+	goji.Delete("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteByID(config, c, w, r) })
 
 }
 func allMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func mails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) 
 	email := c.URLParams["email"]
 	encoder := json.NewEncoder(w)
 
-	result := make([]MailConnection, 0)
+	var result []MailConnection
 	for _, msg := range config.database {
 		if msg.To == email {
 			result = append(result, msg)
@@ -35,7 +35,7 @@ func mails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) 
 	encoder.Encode(result)
 }
 
-func mailById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func mailByID(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 	encoder := json.NewEncoder(w)
 	for _, msg := range config.database {
@@ -48,7 +48,7 @@ func mailById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Reques
 func deleteMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
 
-	result := make([]MailConnection, 0)
+	var result []MailConnection
 	for _, msg := range config.database {
 		if msg.To != email {
 			result = append(result, msg)
@@ -57,10 +57,10 @@ func deleteMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Req
 	config.database = result
 }
 
-func deleteById(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func deleteByID(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 
-	result := make([]MailConnection, 0)
+	var result []MailConnection
 	log.Println("Deleting ", id)
 	for _, msg := range config.database {
 		if msg.MailId != id {

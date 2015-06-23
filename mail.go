@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"code.google.com/p/go-uuid/uuid"
+
 )
 
 func (mc *MailConnection) resetDeadLine() {
@@ -208,6 +210,9 @@ func saveMail(mc *MailConnection) bool {
 			log.Println("Cleaning up email gave an error ", err)
 		}
 		mc.To = to
+		mc.expireStamp = time.Now().Add(2 * time.Hour)
+		mc.Received = time.Now().Unix()
+		mc.MailId = uuid.New()
 		mc.mailconfig.database = append(mc.mailconfig.database, *mc)
 
 	}
@@ -243,3 +248,11 @@ func cleanupEmail(str string) (email string, err error) {
 	}
 	return address.Address, nil
 }
+
+func cleanupDatabase(mc *MailConfig) {
+	for _, v := range mc.database {
+		if time.Since(v.expireStamp).Seconds() > 0 {
+		}
+	}
+}
+

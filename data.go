@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"net"
+	"time"
 )
 
 type MailConfig struct {
@@ -37,6 +38,7 @@ type MailConnection struct {
 	writer         *bufio.Writer
 	dropConnection bool
 	mailconfig     *MailConfig
+	expireStamp    time.Time
 }
 
 // State representating the flow of the connection
