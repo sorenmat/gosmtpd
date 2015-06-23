@@ -7,11 +7,11 @@ machine:
 
 test:
   override:
-    - go get
+    - go get -u
     - go test -short
-    - go get github.com/axw/gocov/gocov
-    - go get github.com/mattn/goveralls
-    - goveralls -service drone.io -repotoken $repo_token ./...
+#    - go get github.com/axw/gocov/gocov
+#    - go get github.com/mattn/goveralls
+#    - goveralls -service drone.io -repotoken $repo_token ./...
     - go build
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
