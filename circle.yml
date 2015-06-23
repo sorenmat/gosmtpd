@@ -1,0 +1,18 @@
+machine:
+  services:
+    - docker
+  environment:
+    HASH: ${CIRCLE_SHA1:0:7}
+    IMAGE_NAME: sorenmat/gosmtpd:$CIRCLE_BUILD_NUM
+
+test:
+  override:
+    - go get
+    - go test -short
+    - go get github.com/axw/gocov/gocov
+    - go get github.com/mattn/goveralls
+    - goveralls -service drone.io -repotoken $repo_token ./...
+    - go build
+    - docker build -t $IMAGE_NAME .
+    - docker push $IMAGE_NAME
+ 
