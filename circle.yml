@@ -7,7 +7,7 @@ machine:
 
 test:
   override:
-    - go get -u
+#    - go get -u
     - go test -short
 #    - go get github.com/axw/gocov/gocov
 #    - go get github.com/mattn/goveralls
