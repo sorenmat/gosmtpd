@@ -13,6 +13,7 @@ test:
 #    - go get github.com/mattn/goveralls
 #    - goveralls -service drone.io -repotoken $repo_token ./...
     - go build
+    - ./create_docker_cfg.sh
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
  
