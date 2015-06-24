@@ -11,7 +11,7 @@ import (
 
 func setupWebRoutes(config *MailConfig) {
 	goji.Get("/mail", func(c web.C, w http.ResponseWriter, r *http.Request) { allMails(config, c, w, r) })
-	goji.Get("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { mails(config, c, w, r) })
+	goji.Get("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { inbox(config, c, w, r) })
 	goji.Get("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { mailByID(config, c, w, r) })
 	goji.Delete("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteMails(config, c, w, r) })
 	goji.Delete("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteByID(config, c, w, r) })
@@ -22,7 +22,7 @@ func allMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Reques
 	encoder.Encode(config.database)
 }
 
-func mails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func inbox(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
 	encoder := json.NewEncoder(w)
 
@@ -32,16 +32,25 @@ func mails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) 
 			result = append(result, msg)
 		}
 	}
+	if len(result) == 0 {
+		http.NotFound(w, r)
+	}
+
 	encoder.Encode(result)
 }
 
 func mailByID(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 	encoder := json.NewEncoder(w)
+	found := false
 	for _, msg := range config.database {
 		if msg.MailId == id {
 			encoder.Encode(msg)
+			found = true
 		}
+	}
+	if !found {
+		http.NotFound(w, r)
 	}
 }
 

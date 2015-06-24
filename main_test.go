@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"log"
 	"net"
@@ -16,7 +17,7 @@ func init() {
 	os.Setenv("PORT", "8282")
 
 	go serve(MailConfig{port: "2525", forwardEnabled: false})
-	time.Sleep(2 * time.Second)
+	//time.Sleep(1 * time.Second)
 
 }
 
@@ -25,21 +26,13 @@ func getPort() *string {
 	return &test
 }
 
-func getMailConnection(email string) []MailConnection {
-	resp, httperr := http.Get("http://localhost:8000/inbox/" + email)
-	if httperr != nil {
-		panic("Unable to call rest")
-	}
-	if resp.StatusCode != 200 {
-		panic(resp.Status)
-	}
+func getMailConnection(email string) ([]MailConnection, int) {
+	resp, _ := http.Get("http://localhost:8000/inbox/" + email)
+
 	decoder := json.NewDecoder(resp.Body)
 	var d []MailConnection
-	err := decoder.Decode(&d)
-	if err != nil {
-		panic("Unable to decode message list")
-	}
-	return d
+	decoder.Decode(&d)
+	return d, resp.StatusCode
 }
 
 func BenchmarkSendMails(b *testing.B) {
@@ -47,7 +40,7 @@ func BenchmarkSendMails(b *testing.B) {
 		SendMailWithMessage("sorenbench@test.com", "message")
 
 	}
-	d := getMailConnection("sorenbench@test.com")
+	d, _ := getMailConnection("sorenbench@test.com")
 	if b.N != len(d) {
 		b.Errorf("Wrong number of email expected %d got %d\n", b.N, len(d))
 	}
@@ -61,13 +54,13 @@ is
 a
 test`)
 	time.Sleep(1 * time.Second)
-	d := getMailConnection("sorenz@test.com")
+	d, _ := getMailConnection("sorenz@test.com")
 
 	if len(d) != 1 {
 		t.Error("To many email ", len(d))
 	}
 
-	email := getEmailByHash(d[0].MailId, t)
+	email, _ := getEmailByHash(d[0].MailId)
 	if email.To == "" {
 		t.Error("To should not be empty")
 	}
@@ -76,70 +69,64 @@ test`)
 func TestSendingMail(t *testing.T) {
 
 	SendMail("sorenm@test.com")
-	d := getMailConnection("sorenm@test.com")
+	d, _ := getMailConnection("sorenm@test.com")
 
 	if len(d) != 1 {
 		t.Error("To many email")
 	}
-	getEmailByHash(d[0].MailId, t)
+	getEmailByHash(d[0].MailId)
+}
+
+func isMailBoxSize(email string, size int, t *testing.T) bool {
+	d, _ := getMailConnection(email)
+	if len(d) != size {
+		t.Errorf("Wrong number of emails, expected %d but was %d", size, len(d))
+		return false
+	}
+	return true
 }
 
 func TestSendingMailsToMultipleReceivers(t *testing.T) {
 
 	SendMails([]string{"meet@test.com", "joe@test.com", "black@test.com"})
 
-	if len(getMailConnection("meet@test.com")) != 1 {
-		t.Error("Wrong number of emails")
-	}
-	if len(getMailConnection("joe@test.com")) != 1 {
-		t.Error("Wrong number of emails")
-	}
-	if len(getMailConnection("black@test.com")) != 1 {
-		t.Error("Wrong number of emails")
-	}
+	isMailBoxSize("meet@test.com", 1, t)
+
+	isMailBoxSize("joe@test.com", 1, t)
+	isMailBoxSize("black@test.com", 1, t)
 
 }
 
 func TestSendingMailsToMultipleReceiversAndDeletingThem(t *testing.T) {
 
 	SendMails([]string{"meet1@test.com", "joe1@test.com", "black1@test.com"})
-
-	if len(getMailConnection("meet1@test.com")) != 1 {
-		t.Error("Wrong number of emails")
-	}
+	isMailBoxSize("meet1@test.com", 1, t)
 	emptyMailBox("meet1@test.com")
-	if len(getMailConnection("meet1@test.com")) != 0 {
-		t.Error("Should be empty")
-	}
-	
-	
-	if len(getMailConnection("joe1@test.com")) != 1 {
-		t.Error("Wrong number of emails")
-	}
-	emptyMailBox("joe1@test.com")
-	if len(getMailConnection("joe1@test.com")) != 0 {
-		t.Error("Should be empty")
-	}
-	
-	if len(getMailConnection("black1@test.com")) != 1 {
-		t.Error("Wrong number of emails")
-	}
+	isMailBoxSize("meet1@test.com", 0, t)
 
+	isMailBoxSize("joe1@test.com", 1, t)
+	emptyMailBox("joe1@test.com")
+	isMailBoxSize("joe1@test.com", 0, t)
+
+	isMailBoxSize("black1@test.com", 1, t)
+	emptyMailBox("black1@test.com")
+	isMailBoxSize("black1@test.com", 0, t)
 }
 
 func TestSendingMailsToMultipleReceiversAndDeletingById(t *testing.T) {
 
 	SendMails([]string{"meet2@test.com", "joe2@test.com", "black1@test.com"})
-	mail := getMailConnection("meet2@test.com")
+
+	mail, _ := getMailConnection("meet2@test.com")
 	if len(mail) != 1 {
 		t.Error("Wrong number of emails")
 	}
 	deleteEmailByID(mail[0].MailId)
-	mails := getMailConnection("meet2@test.com")
+	mails, _ := getMailConnection("meet2@test.com")
 	if len(mails) != 0 {
-		t.Error("Should be empty ,but was ",len(mails))
+		t.Error("Should be empty ,but was ", len(mails))
 	}
-	mails = getMailConnection("joe2@test.com")
+	mails, _ = getMailConnection("joe2@test.com")
 	if len(mails) == 0 {
 		t.Error("Was empty, but shouldn't be")
 	}
@@ -147,16 +134,16 @@ func TestSendingMailsToMultipleReceiversAndDeletingById(t *testing.T) {
 }
 
 func TestSendingMailAndDeletingIt(t *testing.T) {
-
-	SendMail("sorenm1@test.com")
-	d := getMailConnection("sorenm1@test.com")
+	email := randomEmail()
+	SendMail(email)
+	d, _ := getMailConnection(email)
 
 	if len(d) != 1 {
 		t.Error("Expected one email got ", len(d))
 	}
 
 	deleteEmailByID(d[0].MailId)
-	d = getMailConnection("sorenm1@test.com")
+	d, _ = getMailConnection(email)
 
 	if len(d) != 0 {
 		t.Errorf("Not the correct number '%d' of emails\n ", len(d))
@@ -164,20 +151,32 @@ func TestSendingMailAndDeletingIt(t *testing.T) {
 
 }
 
-func getEmailByHash(hash string, t *testing.T) MailConnection {
-	resp, _ := http.Get("http://localhost:8000/email/" + hash)
-	if resp.StatusCode != 200 {
-		t.Error(resp.Status)
+func TestGettingANonExistingInbox(t *testing.T) {
+	email := randomEmail()
+	_, status := getMailConnection(email)
+	if status != 404 {
+		t.Error("Should return 404")
 	}
+
+}
+
+func TestGettingANonExistingId(t *testing.T) {
+	email := randomEmail()
+	_, status := getEmailByHash(email)
+	if status != 404 {
+		t.Error("Should return 404, but was ", status)
+	}
+
+}
+
+func getEmailByHash(hash string) (MailConnection, int) {
+	resp, _ := http.Get("http://localhost:8000/email/" + hash)
 
 	decoder := json.NewDecoder(resp.Body)
 	var d MailConnection
-	err := decoder.Decode(&d)
-	if err != nil {
-		t.Error("Unable to decode message list")
-	}
+	decoder.Decode(&d)
 
-	return d
+	return d, resp.StatusCode
 }
 
 func deleteRequest(url string) (*http.Response, error) {
@@ -310,3 +309,25 @@ Multiline subject`
 	}
 }
 
+func randomEmail() string {
+	var dictionary string
+
+	//	if randType == "alphanum" {
+	dictionary = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	//	}
+
+	/*        if randType == "alpha" {
+	        dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	}
+
+	if randType == "number" {
+	        dictionary = "0123456789"
+	}
+	*/
+	var bytes = make([]byte, 10)
+	rand.Read(bytes)
+	for k, v := range bytes {
+		bytes[k] = dictionary[v%byte(len(dictionary))]
+	}
+	return string(bytes) + "@test.com"
+}

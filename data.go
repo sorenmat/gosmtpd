@@ -6,16 +6,6 @@ import (
 	"time"
 )
 
-type MailConfig struct {
-	hostname       string
-	port           string
-	forwardEnabled bool
-	forwardHost    string
-	forwardPort    string
-	// In-Memory database
-	database []MailConnection
-}
-
 // Basic structure of the mail, this is used for serializing the mail to the storage
 type Mail struct {
 	To, From, Subject, Data, CC, Bcc string
