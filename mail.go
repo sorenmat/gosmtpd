@@ -217,7 +217,7 @@ func saveMail(mc *MailConnection) bool {
 		mc.mailconfig.database = append(mc.mailconfig.database, *mc)
 
 	}
-	if ForwardEnabled {
+	if *forwardhost != "" && *forwardport != "" {
 		if strings.Contains(mc.To, *forwardhost) {
 			forwardEmail(mc)
 		}

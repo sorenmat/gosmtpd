@@ -4,27 +4,23 @@ import (
 	"bufio"
 	"log"
 	"net"
-	"os"
+
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/zenazn/goji"
-	"gopkg.in/alecthomas/kingpin.v1"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const timeout time.Duration = time.Duration(10)
 const mailMaxSize = 1024 * 1024 * 2 // 2 MB
 
-var ForwardEnabled = false
+var webport = kingpin.Flag("webport", "Port the web server should run on").Default("8000").String()
+var HOSTNAME = kingpin.Flag("hostname", "Hostname for the smtp server to listen to").Default("localhost").String()
+var PORT = kingpin.Flag("port", "Port for the smtp server to listen to").Default("2525").String()
 
-var app = kingpin.New("gosmtpd", "A smtp server for swallowing emails, with possiblity to forward some")
-
-var HOSTNAME = app.Flag("hostname", "Port for the smtp server to listen to").Default("localhost").String()
-var PORT = app.Flag("port", "Port for the smtp server to listen to").Default("2525").String()
-
-var forward = app.Command("forwarding", "enable mail forwarding for specific hosts")
-var forwardhost = forward.Arg("forwardhost", "The hostname on which email should be forwarded").Required().String()
-var forwardport = forward.Arg("forwardport", "The hostname on which email should be forwarded").Required().String()
+var forwardhost = kingpin.Flag("forwardhost", "The hostname on which email should be forwarded").Default("").OverrideDefaultFromEnvar("FORWARD_HOST").String()
+var forwardport = kingpin.Flag("forwardport", "The port on which email should be forwarded").Default("25").OverrideDefaultFromEnvar("FORWARD_PORT").String()
 
 func createListener(config MailConfig) net.Listener {
 	addr := "0.0.0.0:" + config.port
@@ -62,14 +58,21 @@ func serve(config MailConfig) {
 			})
 		}
 	}()
-	goji.Serve()
+	log.Println("Trying to bind web to port ",*webport)
+	l, lerr := net.Listen("tcp", ":"+*webport)
+	if lerr != nil {
+		log.Fatalf("Unable to bind to port %s.\n%s\n. ",*webport, lerr)
+	}
+	goji.ServeListener(l)
 }
 
 func main() {
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-
-	case forward.FullCommand():
-		ForwardEnabled = true
+	kingpin.Version("0.1.1")
+	kingpin.Parse()
+	forwardEnabled := false
+	if *forwardhost != "" && *forwardport != "" {
+		forwardEnabled = true
 	}
-	serve(MailConfig{hostname: *HOSTNAME, port: *PORT, forwardEnabled: ForwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport})
+	
+	serve(MailConfig{hostname: *HOSTNAME, port: *PORT, forwardEnabled: forwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport})
 }

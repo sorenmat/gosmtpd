@@ -16,10 +16,15 @@ import (
 
 func init() {
 	os.Setenv("PORT", "8282")
-
+	webport = getWebPort()
 	go serve(MailConfig{port: "2525", forwardEnabled: false})
 	//time.Sleep(1 * time.Second)
 
+}
+
+func getWebPort() *string {
+	test := "8000"
+	return &test
 }
 
 func getPort() *string {
