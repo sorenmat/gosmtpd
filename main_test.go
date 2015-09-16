@@ -11,6 +11,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"io/ioutil"
 )
 
 func init() {
@@ -44,7 +45,17 @@ func BenchmarkSendMails(b *testing.B) {
 	if b.N != len(d) {
 		b.Errorf("Wrong number of email expected %d got %d\n", b.N, len(d))
 	}
+}
 
+func TestStatusResource(t *testing.T) {
+	resp, _ := http.Get("http://localhost:8000/status")
+	if resp.StatusCode != 200 {
+		t.Error("Server should respond with status code 200")
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	if string(body) != "OK" {
+		t.Errorf("Expected body to be ok but was '%s'\n", string(body))
+	}
 }
 
 func TestSendingMailWithMultilines(t *testing.T) {

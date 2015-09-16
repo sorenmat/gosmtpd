@@ -5,6 +5,9 @@
 
 A server that accepts smtp request and saves the emails in memory for later retrieval.
 
+## GET /status
+Returns a 200 if the service is up
+
 ## GET /mail 
 List all mails
 

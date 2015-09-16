@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"code.google.com/p/go-uuid/uuid"
 
+	"code.google.com/p/go-uuid/uuid"
 )
 
 func (mc *MailConnection) resetDeadLine() {
@@ -163,6 +163,7 @@ func readFrom(mc *MailConnection) (input string, err error) {
 	for err == nil {
 		mc.resetDeadLine()
 		read, err = mc.nextLine()
+
 		if err != nil {
 			break
 		}
@@ -255,4 +256,3 @@ func cleanupDatabase(mc *MailConfig) {
 		}
 	}
 }
-

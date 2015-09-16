@@ -10,6 +10,7 @@ import (
 )
 
 func setupWebRoutes(config *MailConfig) {
+	goji.Get("/status", func(c web.C, w http.ResponseWriter, r *http.Request) { status(config, c, w, r) })
 	goji.Get("/mail", func(c web.C, w http.ResponseWriter, r *http.Request) { allMails(config, c, w, r) })
 	goji.Get("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { inbox(config, c, w, r) })
 	goji.Get("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { mailByID(config, c, w, r) })
@@ -17,6 +18,11 @@ func setupWebRoutes(config *MailConfig) {
 	goji.Delete("/email/:id", func(c web.C, w http.ResponseWriter, r *http.Request) { deleteByID(config, c, w, r) })
 
 }
+
+func status(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
+}
+
 func allMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	encoder.Encode(config.database)
