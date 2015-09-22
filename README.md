@@ -5,6 +5,32 @@
 
 A server that accepts smtp request and saves the emails in memory for later retrieval.
 
+## Usage
+```shell
+
+usage: gosmtpd [<flags>]
+
+Flags:
+  --help              Show help (also see --help-long and --help-man).
+  --webport="8000"    Port the web server should run on
+  --hostname="localhost"  
+                      Hostname for the smtp server to listen to
+  --port="2525"       Port for the smtp server to listen to
+  --forwardhost=FORWARDHOST  
+                      The hostname after the @ that we should forward i.e. gmail.com
+  --forwardsmtp=FORWARDSMTP  
+                      SMTP server to forward the mail to
+  --forwardport="25"  The port on which email should be forwarded
+  --forwarduser=FORWARDUSER  
+                      The username for the forward host
+  --forwardpassword=FORWARDPASSWORD  
+                      Password for the user
+  --mailexpiration=300  
+                      Time in seconds for a mail to expire, and be removed from database
+  --version           Show application version.
+
+``` 
+
 ## GET /status
 Returns a 200 if the service is up
 
