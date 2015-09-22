@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"log"
+	"net/smtp"
+	"testing"
+)
 
 func TestCleanUpEmail(t *testing.T) {
 	email := "<sorenm@mymessages.dk>"
@@ -12,28 +16,30 @@ func TestCleanUpEmail(t *testing.T) {
 		t.Error("Address is wrong, when cleaning emails")
 	}
 }
-func TestIsEmailAddressesValid(t *testing.T) {
-	/*	mc := MailConnection{}
-		mc.From = "test@test.com"
-		mc.To = "to@test.com"
 
-		scanForSubject(&mc, "subject: testing")
-		err := isEmailAddressesValid(&mc)
-		if err != nil {
-			t.Error(err)
-		}
-		if mc.To != "to@test.com" {
-			t.Error("To is wrong")
-		}
-		if mc.CC != "joe@blow.dk" {
-			t.Error("CC is wrong")
-		}
-		if mc.Bcc != "test123@test.com" {
-			t.Error("Bcc is wrong")
-		}
+func init() {
+	/*	log.Println("MailTest init")
+			os.Setenv("WEBPORT", "8383")
+			os.Setenv("FORWARD_HOST", "smtp.gmail.com")
+			os.Setenv("FORWARD_SMtP", "tradeshift.com")
+			kingpin.Parse()
 
-		if mc.From != "test@test.com" {
-			t.Error("From is wrong")
-		}
+			go serve(MailConfig{port: "2626", httpport: "8383", forwardEnabled: true})
+		SendMailOnPort("smo@tradeshift.com", "2525")
 	*/
+}
+func SendMailOnPort(receiver string, port string) {
+	err := smtp.SendMail("localhost:"+port,
+		nil,
+		"sorenm@mymessages.dk", // sender
+		[]string{receiver},     //recipient
+		[]byte("Subject: Testing\nThis is $the email body.\nAnd it is the bomb"),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestIsEmailAddressesValid(t *testing.T) {
+
 }

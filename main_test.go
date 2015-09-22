@@ -4,27 +4,21 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"net/smtp"
-	"os"
+	"sync"
 	"testing"
 	"time"
-	"io/ioutil"
 )
 
+var mailconfig = &MailConfig{port: "2525", httpport: "8000", forwardEnabled: false, expireinterval: 1, mu: &sync.Mutex{}}
+
 func init() {
-	os.Setenv("PORT", "8282")
-	webport = getWebPort()
-	go serve(MailConfig{port: "2525", forwardEnabled: false})
-	//time.Sleep(1 * time.Second)
-
-}
-
-func getWebPort() *string {
-	test := "8000"
-	return &test
+	go serve(mailconfig)
 }
 
 func getPort() *string {
@@ -34,6 +28,15 @@ func getPort() *string {
 
 func getMailConnection(email string) ([]MailConnection, int) {
 	resp, _ := http.Get("http://localhost:8000/inbox/" + email)
+
+	decoder := json.NewDecoder(resp.Body)
+	var d []MailConnection
+	decoder.Decode(&d)
+	return d, resp.StatusCode
+}
+
+func getAllMails() ([]MailConnection, int) {
+	resp, _ := http.Get("http://localhost:8000/mail")
 
 	decoder := json.NewDecoder(resp.Body)
 	var d []MailConnection
@@ -165,6 +168,24 @@ func TestSendingMailAndDeletingIt(t *testing.T) {
 		t.Errorf("Not the correct number '%d' of emails\n ", len(d))
 	}
 
+}
+
+func TestMailExpirary(t *testing.T) {
+	log.Println("Starting expiray test !!")
+	mails, _ := getAllMails()
+
+	for i := 0; i < 100; i++ {
+		email := randomEmail()
+		SendMail(email)
+	}
+
+	time.Sleep(4 * time.Second)
+	after_mails, _ := getAllMails()
+	if len(after_mails) != 0 {
+		t.Error("All mails should have expired but found ", len(after_mails))
+	}
+	// wait for expiary
+	fmt.Println(mails, after_mails)
 }
 
 func TestGettingANonExistingInbox(t *testing.T) {
@@ -328,18 +349,8 @@ Multiline subject`
 func randomEmail() string {
 	var dictionary string
 
-	//	if randType == "alphanum" {
 	dictionary = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	//	}
 
-	/*        if randType == "alpha" {
-	        dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	}
-
-	if randType == "number" {
-	        dictionary = "0123456789"
-	}
-	*/
 	var bytes = make([]byte, 10)
 	rand.Read(bytes)
 	for k, v := range bytes {

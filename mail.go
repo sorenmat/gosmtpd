@@ -93,13 +93,13 @@ func handleNormalMode(mc *MailConnection) {
 		if len(line) > 5 {
 			mc.helo = line[5:]
 		}
-		answer(mc, "250 "+*HOSTNAME+" Hello ")
+		answer(mc, "250 "+*hostname+" Hello ")
 
 	case isCommand(line, EHLO):
 		if len(line) > 5 {
 			mc.helo = line[5:]
 		}
-		answer(mc, "250-"+*HOSTNAME+" Hello "+mc.helo+"["+mc.address+"]"+"\r\n")
+		answer(mc, "250-"+*hostname+" Hello "+mc.helo+"["+mc.address+"]"+"\r\n")
 		answer(mc, "250-SIZE "+strconv.Itoa(mailMaxSize)+"\r\n")
 		answer(mc, "250 HELP")
 
@@ -200,7 +200,7 @@ func scanForSubject(mc *MailConnection, line string) {
 }
 
 func saveMail(mc *MailConnection) bool {
-	log.Println("Saving email")
+
 	if err := isEmailAddressesValid(mc); err != nil {
 		log.Printf("Email from '%s' doesn't have a valid email address the error was %s\n", mc.From, err.Error())
 		return false
@@ -211,7 +211,7 @@ func saveMail(mc *MailConnection) bool {
 			log.Println("Cleaning up email gave an error ", err)
 		}
 		mc.To = to
-		mc.expireStamp = time.Now().Add(2 * time.Hour)
+		mc.expireStamp = time.Now().Add(time.Duration(mc.mailconfig.expireinterval) * time.Second)
 		mc.Received = time.Now().Unix()
 		mc.MailId = uuid.New()
 		mc.mailconfig.database = append(mc.mailconfig.database, *mc)
@@ -222,7 +222,7 @@ func saveMail(mc *MailConnection) bool {
 			forwardEmail(mc)
 		}
 	}
-	log.Println("Email saved !")
+
 	return true
 }
 
@@ -251,8 +251,16 @@ func cleanupEmail(str string) (email string, err error) {
 }
 
 func cleanupDatabase(mc *MailConfig) {
+	mc.mu.Lock()
+	dbcopy := MailDatabase{}
+	log.Println("About to expire entries from database, current length ", len(mc.database))
+
 	for _, v := range mc.database {
-		if time.Since(v.expireStamp).Seconds() > 0 {
+		if time.Since(v.expireStamp).Seconds() < 0 {
+			dbcopy = append(dbcopy, v)
 		}
 	}
+	mc.database = dbcopy
+	log.Println("After expire entries in database, new length ", len(mc.database))
+	mc.mu.Unlock()
 }

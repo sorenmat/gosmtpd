@@ -11,4 +11,7 @@ type MailConfig struct {
 	// In-Memory database
 	database MailDatabase
 	mu       *sync.Mutex
+
+	httpport       string
+	expireinterval int
 }

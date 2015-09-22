@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"sync"
 
 	"time"
 
@@ -15,18 +16,22 @@ import (
 const timeout time.Duration = time.Duration(10)
 const mailMaxSize = 1024 * 1024 * 2 // 2 MB
 
-var webport = kingpin.Flag("webport", "Port the web server should run on").Default("8000").String()
-var HOSTNAME = kingpin.Flag("hostname", "Hostname for the smtp server to listen to").Default("localhost").String()
-var PORT = kingpin.Flag("port", "Port for the smtp server to listen to").Default("2525").String()
+var webport = kingpin.Flag("webport", "Port the web server should run on").Default("8000").OverrideDefaultFromEnvar("WEBPORT").String()
+var hostname = kingpin.Flag("hostname", "Hostname for the smtp server to listen to").Default("localhost").String()
+var port = kingpin.Flag("port", "Port for the smtp server to listen to").Default("2525").String()
 
-var forwardhost = kingpin.Flag("forwardhost", "The hostname on which email should be forwarded").Default("").OverrideDefaultFromEnvar("FORWARD_HOST").String()
+var forwardhost = kingpin.Flag("forwardhost", "The hostname after the @ that we should forward i.e. gmail.com").Default("").OverrideDefaultFromEnvar("FORWARD_HOST").String()
+var forwardsmtp = kingpin.Flag("forwardsmtp", "SMTP server to forward the mail to").Default("").OverrideDefaultFromEnvar("FORWARD_SMTP").String()
 var forwardport = kingpin.Flag("forwardport", "The port on which email should be forwarded").Default("25").OverrideDefaultFromEnvar("FORWARD_PORT").String()
+var forwarduser = kingpin.Flag("forwarduser", "The username for the forward host").Default("").OverrideDefaultFromEnvar("FORWARD_USER").String()
+var forwardpassword = kingpin.Flag("forwardpassword", "Password for the user").Default("").OverrideDefaultFromEnvar("FORWARD_PASSWORD").String()
+
+var cleanupInterval = kingpin.Flag("mailexpiration", "Time in seconds for a mail to expire, and be removed from database").Default("300").Int()
 
 func createListener(config MailConfig) net.Listener {
 	addr := "0.0.0.0:" + config.port
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		//log.Fatalf("Cannot listen on '%s' port '%s'\nerror: %v", addr, config.port, err)
 		panic(err)
 	} else {
 		log.Println("Listening on tcp ", addr)
@@ -34,12 +39,21 @@ func createListener(config MailConfig) net.Listener {
 	return listener
 }
 
-func serve(config MailConfig) {
+func serve(config *MailConfig) {
+	if config.httpport == "" {
+		log.Fatal("HTTPPort needs to be configured")
+	}
 	config.database = make([]MailConnection, 0)
+	config.mu = &sync.Mutex{}
+	go func() {
+		for {
+			cleanupDatabase(config)
+			time.Sleep(time.Duration(config.expireinterval) * time.Second)
+		}
+	}()
+	setupWebRoutes(config)
 
-	setupWebRoutes(&config)
-
-	listener := createListener(config)
+	listener := createListener(*config)
 	go func() {
 		for {
 			conn, err := listener.Accept()
@@ -48,7 +62,7 @@ func serve(config MailConfig) {
 				continue
 			}
 			go processClientRequest(&MailConnection{
-				mailconfig: &config,
+				mailconfig: config,
 				connection: conn,
 				address:    conn.RemoteAddr().String(),
 				reader:     bufio.NewReader(conn),
@@ -58,10 +72,10 @@ func serve(config MailConfig) {
 			})
 		}
 	}()
-	log.Println("Trying to bind web to port ",*webport)
-	l, lerr := net.Listen("tcp", ":"+*webport)
+	log.Println("Trying to bind web to port ", config.httpport)
+	l, lerr := net.Listen("tcp", ":"+config.httpport)
 	if lerr != nil {
-		log.Fatalf("Unable to bind to port %s.\n%s\n. ",*webport, lerr)
+		log.Fatalf("Unable to bind to port %s.\n%s\n. ", config.httpport, lerr)
 	}
 	goji.ServeListener(l)
 }
@@ -73,6 +87,7 @@ func main() {
 	if *forwardhost != "" && *forwardport != "" {
 		forwardEnabled = true
 	}
-	
-	serve(MailConfig{hostname: *HOSTNAME, port: *PORT, forwardEnabled: forwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport})
+	log.Println("Clenaup interval ", *cleanupInterval)
+
+	serve(&MailConfig{hostname: *hostname, port: *port, httpport: *webport, forwardEnabled: forwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport, expireinterval: *cleanupInterval})
 }
