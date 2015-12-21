@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"code.google.com/p/go-uuid/uuid"
 )
 
 func (mc *MailConnection) resetDeadLine() {
@@ -51,7 +49,7 @@ func (mc *MailConnection) flush() bool {
 func processClientRequest(mc *MailConnection) {
 	defer mc.connection.Close()
 
-	greeting := "220 " + mc.mailconfig.hostname + " SMTP goSMTPd #" + mc.MailId + " " + time.Now().Format(time.RFC1123Z)
+	greeting := "220 " + mc.mailserver.hostname + " SMTP goSMTPd #" + mc.MailId + " " + time.Now().Format(time.RFC1123Z)
 	for i := 0; i < 100; i++ {
 		switch mc.state {
 		case INITIAL:
@@ -63,7 +61,7 @@ func processClientRequest(mc *MailConnection) {
 			var err error
 			mc.Data, err = readFrom(mc)
 			if err == nil {
-				if status := saveMail(mc); status {
+				if status := mc.mailserver.saveMail(mc); status {
 					answer(mc, "250 OK : queued as "+mc.MailId)
 				} else {
 					answer(mc, "554 Error: transaction failed.")
@@ -199,33 +197,6 @@ func scanForSubject(mc *MailConnection, line string) {
 	}
 }
 
-func saveMail(mc *MailConnection) bool {
-
-	if err := isEmailAddressesValid(mc); err != nil {
-		log.Printf("Email from '%s' doesn't have a valid email address the error was %s\n", mc.From, err.Error())
-		return false
-	}
-	for _, rcpt := range mc.recepient {
-		to, err := cleanupEmail(rcpt)
-		if err != nil {
-			log.Println("Cleaning up email gave an error ", err)
-		}
-		mc.To = to
-		mc.expireStamp = time.Now().Add(time.Duration(mc.mailconfig.expireinterval) * time.Second)
-		mc.Received = time.Now().Unix()
-		mc.MailId = uuid.New()
-		mc.mailconfig.database = append(mc.mailconfig.database, *mc)
-
-	}
-	if *forwardhost != "" && *forwardport != "" {
-		if strings.Contains(mc.To, *forwardhost) {
-			forwardEmail(mc)
-		}
-	}
-
-	return true
-}
-
 func isEmailAddressesValid(mc *MailConnection) error {
 	if from, err := cleanupEmail(mc.From); err == nil {
 		mc.From = from
@@ -248,19 +219,4 @@ func cleanupEmail(str string) (email string, err error) {
 		return "", err
 	}
 	return address.Address, nil
-}
-
-func cleanupDatabase(mc *MailConfig) {
-	mc.mu.Lock()
-	dbcopy := MailDatabase{}
-	log.Println("About to expire entries from database, current length ", len(mc.database))
-
-	for _, v := range mc.database {
-		if time.Since(v.expireStamp).Seconds() < 0 {
-			dbcopy = append(dbcopy, v)
-		}
-	}
-	mc.database = dbcopy
-	log.Println("After expire entries in database, new length ", len(mc.database))
-	mc.mu.Unlock()
 }

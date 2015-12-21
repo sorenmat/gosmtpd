@@ -28,8 +28,8 @@ var forwardpassword = kingpin.Flag("forwardpassword", "Password for the user").D
 
 var cleanupInterval = kingpin.Flag("mailexpiration", "Time in seconds for a mail to expire, and be removed from database").Default("300").Int()
 
-func createListener(config MailConfig) net.Listener {
-	addr := "0.0.0.0:" + config.port
+func createListener(server *MailServer) net.Listener {
+	addr := "0.0.0.0:" + server.port
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
@@ -39,21 +39,21 @@ func createListener(config MailConfig) net.Listener {
 	return listener
 }
 
-func serve(config *MailConfig) {
-	if config.httpport == "" {
+func serve(mailserver *MailServer) {
+	if mailserver.httpport == "" {
 		log.Fatal("HTTPPort needs to be configured")
 	}
-	config.database = make([]MailConnection, 0)
-	config.mu = &sync.Mutex{}
+	mailserver.database = make([]MailConnection, 0)
+	mailserver.mu = &sync.Mutex{}
 	go func() {
 		for {
-			cleanupDatabase(config)
-			time.Sleep(time.Duration(config.expireinterval) * time.Second)
+			mailserver.cleanupDatabase()
+			time.Sleep(time.Duration(mailserver.expireinterval) * time.Second)
 		}
 	}()
-	setupWebRoutes(config)
+	setupWebRoutes(mailserver)
 
-	listener := createListener(*config)
+	listener := createListener(mailserver)
 	go func() {
 		for {
 			conn, err := listener.Accept()
@@ -62,7 +62,7 @@ func serve(config *MailConfig) {
 				continue
 			}
 			go processClientRequest(&MailConnection{
-				mailconfig: config,
+				mailserver: mailserver,
 				connection: conn,
 				address:    conn.RemoteAddr().String(),
 				reader:     bufio.NewReader(conn),
@@ -72,10 +72,10 @@ func serve(config *MailConfig) {
 			})
 		}
 	}()
-	log.Println("Trying to bind web to port ", config.httpport)
-	l, lerr := net.Listen("tcp", ":"+config.httpport)
+	log.Println("Trying to bind web to port ", mailserver.httpport)
+	l, lerr := net.Listen("tcp", ":"+mailserver.httpport)
 	if lerr != nil {
-		log.Fatalf("Unable to bind to port %s.\n%s\n. ", config.httpport, lerr)
+		log.Fatalf("Unable to bind to port %s.\n%s\n. ", mailserver.httpport, lerr)
 	}
 	goji.ServeListener(l)
 }
@@ -89,5 +89,5 @@ func main() {
 	}
 	log.Println("Clenaup interval ", *cleanupInterval)
 
-	serve(&MailConfig{hostname: *hostname, port: *port, httpport: *webport, forwardEnabled: forwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport, expireinterval: *cleanupInterval})
+	serve(&MailServer{hostname: *hostname, port: *port, httpport: *webport, forwardEnabled: forwardEnabled, forwardHost: *forwardhost, forwardPort: *forwardport, expireinterval: *cleanupInterval})
 }

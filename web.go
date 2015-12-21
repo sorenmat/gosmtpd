@@ -9,7 +9,7 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-func setupWebRoutes(config *MailConfig) {
+func setupWebRoutes(config *MailServer) {
 	goji.Get("/status", func(c web.C, w http.ResponseWriter, r *http.Request) { status(config, c, w, r) })
 	goji.Get("/mail", func(c web.C, w http.ResponseWriter, r *http.Request) { allMails(config, c, w, r) })
 	goji.Get("/inbox/:email", func(c web.C, w http.ResponseWriter, r *http.Request) { inbox(config, c, w, r) })
@@ -19,16 +19,16 @@ func setupWebRoutes(config *MailConfig) {
 
 }
 
-func status(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func status(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func allMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func allMails(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	encoder.Encode(config.database)
 }
 
-func inbox(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func inbox(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
 	encoder := json.NewEncoder(w)
 
@@ -45,7 +45,7 @@ func inbox(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) 
 	encoder.Encode(result)
 }
 
-func mailByID(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func mailByID(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 	encoder := json.NewEncoder(w)
 	found := false
@@ -60,7 +60,7 @@ func mailByID(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func deleteMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func deleteMails(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
 
 	var result []MailConnection
@@ -72,7 +72,7 @@ func deleteMails(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Req
 	config.database = result
 }
 
-func deleteByID(config *MailConfig, c web.C, w http.ResponseWriter, r *http.Request) {
+func deleteByID(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
 
 	var result []MailConnection

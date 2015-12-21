@@ -1,9 +1,9 @@
 package main
-import (
-	"net/smtp"
-	"net"
-)
 
+import (
+	"net"
+	"net/smtp"
+)
 
 func getForwardHost() string {
 	return net.JoinHostPort(*forwardhost, *forwardport)

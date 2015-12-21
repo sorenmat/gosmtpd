@@ -1,4 +1,5 @@
 package main
+
 import "strings"
 
 func isCommand(str, substr string) bool {

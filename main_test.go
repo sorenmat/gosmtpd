@@ -15,19 +15,17 @@ import (
 	"time"
 )
 
-var mailconfig = &MailConfig{port: "2525", httpport: "8000", forwardEnabled: false, expireinterval: 1, mu: &sync.Mutex{}}
+var mailconfig = MailServer{port: "2525", httpport: "8000", forwardEnabled: false, expireinterval: 1, mu: &sync.Mutex{}}
 
 func init() {
-	go serve(mailconfig)
-}
-
-func getPort() *string {
-	test := "2525"
-	return &test
+	go serve(&mailconfig)
 }
 
 func getMailConnection(email string) ([]MailConnection, int) {
-	resp, _ := http.Get("http://localhost:8000/inbox/" + email)
+	resp, err := http.Get("http://localhost:8000/inbox/" + email)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	decoder := json.NewDecoder(resp.Body)
 	var d []MailConnection
@@ -68,12 +66,13 @@ func TestStatusResource(t *testing.T) {
 
 func TestSendingMailWithMultilines(t *testing.T) {
 	//	PORT = getPort() // we need to force this, since we don't parse the commandline
-	SendMailWithMessage("sorenz@test.com", `This
+	email_address := randomEmail()
+	SendMailWithMessage(email_address, `This
 is
 a
 test`)
-	time.Sleep(1 * time.Second)
-	d, _ := getMailConnection("sorenz@test.com")
+
+	d, _ := getMailConnection(email_address)
 
 	if len(d) != 1 {
 		t.Error("To many email ", len(d))
@@ -170,10 +169,14 @@ func TestSendingMailAndDeletingIt(t *testing.T) {
 
 }
 
-func TestMailExpirary(t *testing.T) {
+func TestMailExpiry(t *testing.T) {
+	old := mailconfig.expireinterval
+	defer func() { mailconfig.expireinterval = old }()
+
 	log.Println("Starting expiray test !!")
 	mails, _ := getAllMails()
 
+	mailconfig.expireinterval = 1
 	for i := 0; i < 100; i++ {
 		email := randomEmail()
 		SendMail(email)

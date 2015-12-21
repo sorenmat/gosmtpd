@@ -27,7 +27,7 @@ type MailConnection struct {
 	reader         *bufio.Reader
 	writer         *bufio.Writer
 	dropConnection bool
-	mailconfig     *MailConfig
+	mailserver     *MailServer
 	expireStamp    time.Time
 }
 
