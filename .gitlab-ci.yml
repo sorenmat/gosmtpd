@@ -1,3 +1,10 @@
+before_script:
+  - export GOPATH=$(pwd)
+
+stages:
+  - build
+  - test
+
 compile-go-1.5:
   image: golang:1.5
   stage: build
