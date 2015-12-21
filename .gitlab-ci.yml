@@ -10,5 +10,5 @@ compile-go-1.5:
   image: golang:1.5
   stage: test
   script:
-    # Loop through *.go, go build, if exit code is not 0, then exit 66
+    - go get -u -v
     - go test
