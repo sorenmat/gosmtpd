@@ -23,14 +23,20 @@ func status(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request)
 	w.Write([]byte("OK"))
 }
 
+func databaseToJSON(mails []MailConnection) []byte {
+	result ,err := json.MarshalIndent(mails, "", "  ")
+	if err != nil {
+		log.Panic(err)
+	}
+	return result
+}
+
 func allMails(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
-	encoder := json.NewEncoder(w)
-	encoder.Encode(config.database)
+	w.Write(databaseToJSON(config.database))
 }
 
 func inbox(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	email := c.URLParams["email"]
-	encoder := json.NewEncoder(w)
 
 	var result []MailConnection
 	for _, msg := range config.database {
@@ -42,16 +48,15 @@ func inbox(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) 
 		http.NotFound(w, r)
 	}
 
-	encoder.Encode(result)
+	w.Write(databaseToJSON(result))
 }
 
 func mailByID(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request) {
 	id := c.URLParams["id"]
-	encoder := json.NewEncoder(w)
 	found := false
 	for _, msg := range config.database {
 		if msg.MailId == id {
-			encoder.Encode(msg)
+			w.Write(databaseToJSON(config.database))
 			found = true
 		}
 	}
