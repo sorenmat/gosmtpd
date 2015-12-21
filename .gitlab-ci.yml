@@ -1,0 +1,6 @@
+compile-go-1.5:
+  image: golang:1.5
+  stage: build
+  script:
+    # Loop through *.go, go build, if exit code is not 0, then exit 66
+    - (for f in *.go; do echo "-> go build $f";  go build $f; if [ $? -ne 0 ]; then exit 66; fi; done);
