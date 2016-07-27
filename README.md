@@ -57,3 +57,11 @@ You can install it by doing
 
 
 ``docker start sorenmat/gosmtpd``
+
+# Building
+
+gosmtpd are using vendoring to keep track of dependencies, we are using govendor for this.
+
+`go get -u github.com/kardianos/govendor´
+
+To download the dependencies do `govendor sync`
