@@ -1,4 +1,4 @@
-image: golang:1.4.2
+image: golang:1.6.3
 script:
   - go get
   - go build
