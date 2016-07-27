@@ -1,11 +1,12 @@
 package main
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type MailServer struct {
@@ -37,7 +38,7 @@ func (server *MailServer) saveMail(mail *MailConnection) bool {
 		mail.To = to
 		mail.expireStamp = time.Now().Add(time.Duration(mail.mailserver.expireinterval) * time.Second)
 		mail.Received = time.Now().Unix()
-		mail.MailId = uuid.New()
+		mail.MailId = uuid.New().String()
 		server.database = append(server.database, *mail)
 
 	}

@@ -24,7 +24,7 @@ func status(config *MailServer, c web.C, w http.ResponseWriter, r *http.Request)
 }
 
 func databaseToJSON(mails []MailConnection) []byte {
-	result ,err := json.MarshalIndent(mails, "", "  ")
+	result, err := json.MarshalIndent(mails, "", "  ")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -56,7 +56,8 @@ func mailByID(config *MailServer, c web.C, w http.ResponseWriter, r *http.Reques
 	found := false
 	for _, msg := range config.database {
 		if msg.MailId == id {
-			w.Write(databaseToJSON(config.database))
+			jsonData := databaseToJSON(config.database)
+			w.Write(jsonData)
 			found = true
 		}
 	}

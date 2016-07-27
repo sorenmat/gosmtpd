@@ -8,7 +8,8 @@ import (
 
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/google/uuid"
+
 	"github.com/zenazn/goji"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -67,7 +68,7 @@ func serve(mailserver *MailServer) {
 				address:    conn.RemoteAddr().String(),
 				reader:     bufio.NewReader(conn),
 				writer:     bufio.NewWriter(conn),
-				MailId:     uuid.New(),
+				MailId:     uuid.New().String(),
 				Mail:       Mail{Received: time.Now().Unix()},
 			})
 		}
