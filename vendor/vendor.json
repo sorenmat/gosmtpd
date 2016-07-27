@@ -1,0 +1,79 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "FoOukB4hzckRy4YKnWRL4g3cR8k=",
+			"path": "github.com/alecthomas/template",
+			"revision": "14fd436dd20c3cc65242a9f396b61bfc8a3926fc",
+			"revisionTime": "2015-12-01T00:57:09Z"
+		},
+		{
+			"checksumSHA1": "3wt0pTXXeS+S93unwhGoLIyGX/Q=",
+			"path": "github.com/alecthomas/template/parse",
+			"revision": "14fd436dd20c3cc65242a9f396b61bfc8a3926fc",
+			"revisionTime": "2015-12-01T00:57:09Z"
+		},
+		{
+			"checksumSHA1": "fCc3grA7vIxfBru7R3SqjcW+oLI=",
+			"path": "github.com/alecthomas/units",
+			"revision": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+			"revisionTime": "2015-10-22T06:55:26Z"
+		},
+		{
+			"checksumSHA1": "SC8vx95Oe3k0d7TyJlGsww0btTY=",
+			"path": "github.com/google/uuid",
+			"revision": "f3f4b54b2fabcf1f11dcc939025bb0c109b00ed8",
+			"revisionTime": "2016-02-29T14:24:49Z"
+		},
+		{
+			"checksumSHA1": "ZD5skUBJeupwWUjMDbIOIV6kLJA=",
+			"path": "github.com/zenazn/goji",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "T9J7FOCeCaD5q8T2v+72WtRq2ds=",
+			"path": "github.com/zenazn/goji/bind",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "4OSC+LqsCMS+grtgEW7xB4AFgaU=",
+			"path": "github.com/zenazn/goji/graceful",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "caN0mgXEzfd0w9rhUsppkUUUCns=",
+			"path": "github.com/zenazn/goji/graceful/listener",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "2D1oFW10TM4Rhvza5qwyZ1F39ZI=",
+			"path": "github.com/zenazn/goji/web",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "6rHgrhLBfPQ8+CZwH0tnVV8843k=",
+			"path": "github.com/zenazn/goji/web/middleware",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "g9hmnkrmD9/3bVFYssjA1mu+r2o=",
+			"path": "github.com/zenazn/goji/web/mutil",
+			"revision": "859bfa93a8db583de1dd72a1edcbf4bb75c0dbbe",
+			"revisionTime": "2016-02-12T06:19:35Z"
+		},
+		{
+			"checksumSHA1": "QPs8F/aqKAAQJr8dLc3CVQ5SxlM=",
+			"path": "gopkg.in/alecthomas/kingpin.v2",
+			"revision": "8cccfa8eb2e3183254457fb1749b2667fbc364c7",
+			"revisionTime": "2016-02-17T09:03:01Z"
+		}
+	],
+	"rootPath": "github.com/sorenmat/gosmtpd"
+}
