@@ -67,3 +67,7 @@ gosmtpd are using vendoring to keep track of dependencies, we are using govendor
 `go get -u github.com/kardianos/govendor´
 
 To download the dependencies do `govendor sync`
+
+
+This is a extremely modified version of https://github.com/bradfitz/go-smtpd all credits goes to @bradfitz
+
