@@ -1,5 +1,6 @@
 # Moved to https://gitlab.com/sorenmat/gosmtpd
 
+
 # A very simple SMTP server with a REST API
 
 [![Build Status](https://drone.io/github.com/sorenmat/gosmtpd/status.png)](https://drone.io/github.com/sorenmat/gosmtpd/latest)
